@@ -11,28 +11,25 @@ package dyvil.util;
 public class MatchError extends RuntimeException
 {
 	private static final long serialVersionUID = 2882649299151786454L;
-	
-	private Object match;
-	
+
 	public MatchError(Object match)
 	{
-		this.match = match;
+		super(getMessage(match), null, false, true);
 	}
-	
-	@Override
-	public String getMessage()
+
+	protected static String getMessage(Object match)
 	{
-		if (this.match == null)
+		if (match == null)
 		{
 			return "null";
 		}
 		try
 		{
-			return this.match.toString() + " (of class " + this.match.getClass().getName() + ")";
+			return match.toString() + " (of class " + match.getClass().getName() + ")";
 		}
 		catch (Throwable t)
 		{
-			return "An instance of class " + this.match.getClass().getCanonicalName();
+			return "An instance of class " + match.getClass().getCanonicalName();
 		}
 	}
 }

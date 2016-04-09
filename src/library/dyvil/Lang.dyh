@@ -7,9 +7,10 @@ import	dyvil.lang._
 
 // Import useful utility classes
 import	dyvil.collection._
+import	dyvil.function._
+import	dyvil.tuple._
 import	dyvil.io.Console
 import	dyvil.random.Random
-import	dyvil.function.PartialFunction
 import	dyvil.util.{ Option, None, Some }
 import	dyvil.util.Version
 
