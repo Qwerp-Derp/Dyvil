@@ -54,7 +54,6 @@ public final class MemberParser<T extends IDataMember> extends Parser implements
 	protected static final int PARAMETERS_END             = 9;
 	protected static final int GENERICS                   = 10;
 	protected static final int GENERICS_END               = 11;
-	protected static final int ANGLE_GENERICS_END         = 12;
 	protected static final int METHOD_TYPE                = 13;
 	protected static final int METHOD_THROWS              = 14;
 	protected static final int METHOD_VALUE               = 15;
@@ -259,7 +258,6 @@ public final class MemberParser<T extends IDataMember> extends Parser implements
 			case BaseSymbols.EQUALS:
 				this.mode = FIELD_TYPE;
 				return;
-			case BaseSymbols.OPEN_SQUARE_BRACKET:
 			case BaseSymbols.OPEN_PARENTHESIS:
 				this.mode = METHOD_SEPARATOR;
 				return;
@@ -382,12 +380,6 @@ public final class MemberParser<T extends IDataMember> extends Parser implements
 			if (TypeParser.isGenericStart(token, type))
 			{
 				pm.splitJump(token, 1);
-				this.mode = ANGLE_GENERICS_END;
-				pm.pushParser(new TypeParameterListParser((IMethod) this.member));
-				return;
-			}
-			if (type == BaseSymbols.OPEN_SQUARE_BRACKET)
-			{
 				this.mode = GENERICS_END;
 				pm.pushParser(new TypeParameterListParser((IMethod) this.member));
 				return;
@@ -402,7 +394,7 @@ public final class MemberParser<T extends IDataMember> extends Parser implements
 			}
 			// Fallthrough
 		case METHOD_TYPE:
-			if (type == BaseSymbols.COLON)
+			if (type == BaseSymbols.COLON || type == DyvilSymbols.ARROW_RIGHT)
 			{
 				if (this.type != Types.UNKNOWN)
 				{
@@ -448,14 +440,6 @@ public final class MemberParser<T extends IDataMember> extends Parser implements
 			return;
 		case GENERICS_END:
 			this.mode = PARAMETERS;
-			if (type != BaseSymbols.CLOSE_SQUARE_BRACKET)
-			{
-				pm.reparse();
-				pm.report(token, "method.generic.close_bracket");
-			}
-			return;
-		case ANGLE_GENERICS_END:
-			this.mode = PARAMETERS;
 			if (TypeParser.isGenericEnd(token, type))
 			{
 				pm.splitJump(token, 1);
@@ -463,7 +447,7 @@ public final class MemberParser<T extends IDataMember> extends Parser implements
 			}
 
 			pm.reparse();
-			pm.report(token, "method.generic.close_angle");
+			pm.report(token, "generic.close_angle");
 			return;
 		case PARAMETERS_END:
 			this.mode = METHOD_TYPE;

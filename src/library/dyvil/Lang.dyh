@@ -14,9 +14,6 @@ import	dyvil.random.Random
 import	dyvil.util.{ Option, None, Some }
 import	dyvil.util.Version
 
-// Import Tuple types with more useful names
-import	dyvil.tuple.{ Tuple2 => Pair, Tuple3 => Triple }
-
 // Import useful annotation classes
 import	dyvil.annotation.Intrinsic
 import	dyvil.annotation.{ Deprecated, Experimental, UsageInfo }
@@ -41,7 +38,6 @@ using	dyvil.lang.{
 	LanguageFeatures._
 	ObjectExtensions._
 	StringExtensions._
-	FunctionConversions._
 }
 
 // ---------------------------------------- Type Aliases ----------------------------------------
@@ -55,10 +51,6 @@ type	Int		= java.lang.Integer
 type	Long	= java.lang.Long
 type	Float	= java.lang.Float
 type	Double	= java.lang.Double
-
-// Tuple Type Aliases
-type	Pair[A, B]			= (A, B)
-type	Triple[A, B, C]		= (A, B, C)
 
 // ---------------------------------------- Operator Definitions ----------------------------------------
 

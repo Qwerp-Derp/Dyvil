@@ -180,10 +180,9 @@ public class CodeMethod extends AbstractMethod
 			{
 				inferType = true;
 				this.type = this.value.getType();
-				if (this.type == Types.UNKNOWN)
+				if (this.type == Types.UNKNOWN && this.value.isResolved())
 				{
 					markers.add(Markers.semantic(this.position, "method.type.infer", this.name.unqualified));
-					this.type = Types.ANY;
 				}
 			}
 
@@ -409,7 +408,8 @@ public class CodeMethod extends AbstractMethod
 				marker.addInfo(Markers.getSemantic("method.type", this.type));
 				marker.addInfo(Markers.getSemantic("method.override.type", superReturnType));
 
-				marker.addInfo(Markers.getSemantic("method.override", Util.methodSignatureToString(overrideMethod),
+				marker.addInfo(Markers.getSemantic("method.override",
+				                                   Util.methodSignatureToString(overrideMethod, typeContext),
 				                                   overrideMethod.getEnclosingClass().getFullName()));
 				markers.add(marker);
 			}

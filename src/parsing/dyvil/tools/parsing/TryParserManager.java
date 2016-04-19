@@ -22,6 +22,12 @@ public class TryParserManager extends ParserManager
 		super(symbols);
 	}
 
+	public TryParserManager(Symbols symbols, TokenIterator tokens)
+	{
+		super(symbols, tokens, null);
+	}
+
+	@Deprecated
 	public TryParserManager(Symbols symbols, TokenIterator tokens, MarkerList markers)
 	{
 		super(symbols, tokens, markers);
@@ -31,9 +37,9 @@ public class TryParserManager extends ParserManager
 	public void report(Marker error)
 	{
 		final boolean isError = error.isError();
-		if (!this.hasSyntaxErrors)
+		if (!this.hasSyntaxErrors && isError)
 		{
-			this.hasSyntaxErrors = isError;
+			this.hasSyntaxErrors = true;
 		}
 
 		if (this.reportErrors || !isError)
@@ -81,15 +87,23 @@ public class TryParserManager extends ParserManager
 		return split;
 	}
 
+	@Deprecated
 	public boolean parse(Parser parser, boolean reportErrors)
 	{
-		return this.parse(parser, reportErrors ? REPORT_ERRORS : 0);
+		return this.parse(parser, this.markers, reportErrors ? REPORT_ERRORS : 0);
 	}
 
+	@Deprecated
 	public boolean parse(Parser parser, int flags)
+	{
+		return this.parse(parser, this.markers, flags);
+	}
+
+	public boolean parse(Parser parser, MarkerList markers, int flags)
 	{
 		this.parser = parser;
 		this.hasSyntaxErrors = false;
+		this.markers = new MarkerList(markers.getI18n());
 		this.reportErrors = (flags & REPORT_ERRORS) != 0;
 
 		IToken token = null;
@@ -120,7 +134,7 @@ public class TryParserManager extends ParserManager
 			{
 				if ((flags & EXIT_ON_ROOT) != 0)
 				{
-					return this.success();
+					return this.success(markers);
 				}
 				this.reportUnparsed(token);
 				continue;
@@ -129,7 +143,7 @@ public class TryParserManager extends ParserManager
 			{
 				if (this.hasSyntaxErrors)
 				{
-					return false;
+					return this.success(markers);
 				}
 
 				this.reportErrors = true;
@@ -142,22 +156,27 @@ public class TryParserManager extends ParserManager
 			catch (Exception ex)
 			{
 				this.reportError(token, ex);
-				return this.success();
+				return this.success(markers);
 			}
 
-			if (!this.success())
+			if (this.hasSyntaxErrors && !this.reportErrors)
 			{
-				return false;
+				return this.success(markers);
 			}
 		}
 
 		this.parseRemaining(token);
 
-		return this.success();
+		return this.success(markers);
 	}
 
-	private boolean success()
+	private boolean success(MarkerList markers)
 	{
-		return !this.hasSyntaxErrors || this.reportErrors;
+		if (!this.hasSyntaxErrors || this.reportErrors)
+		{
+			markers.addAll(this.markers);
+			return true;
+		}
+		return false;
 	}
 }

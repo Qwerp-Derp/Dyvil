@@ -33,7 +33,6 @@ import dyvil.tools.compiler.ast.structure.IDyvilHeader;
 import dyvil.tools.compiler.ast.type.IType;
 import dyvil.tools.compiler.ast.type.Mutability;
 import dyvil.tools.compiler.ast.type.builtin.Types;
-import dyvil.tools.compiler.ast.type.typevar.TypeVarType;
 import dyvil.tools.compiler.backend.ClassFormat;
 import dyvil.tools.compiler.backend.MethodWriter;
 import dyvil.tools.compiler.backend.exception.BytecodeException;
@@ -390,29 +389,14 @@ public abstract class AbstractMethod extends Member implements IMethod, ILabelCo
 	}
 
 	@Override
-	public IType resolveType(Name name)
+	public ITypeParameter resolveTypeParameter(Name name)
 	{
 		for (int i = 0; i < this.typeParameterCount; i++)
 		{
-			ITypeParameter var = this.typeParameters[i];
-			if (var.getName() == name)
+			final ITypeParameter typeParameter = this.typeParameters[i];
+			if (typeParameter.getName() == name)
 			{
-				return new TypeVarType(var);
-			}
-		}
-
-		return null;
-	}
-
-	@Override
-	public ITypeParameter resolveTypeVariable(Name name)
-	{
-		for (int i = 0; i < this.typeParameterCount; i++)
-		{
-			ITypeParameter var = this.typeParameters[i];
-			if (var.getName() == name)
-			{
-				return var;
+				return typeParameter;
 			}
 		}
 
@@ -502,15 +486,8 @@ public abstract class AbstractMethod extends Member implements IMethod, ILabelCo
 			return 0;
 		}
 
-		// Only matching the name
-		if (arguments == null)
-		{
-			return 1;
-		}
-
 		int parameterStartIndex = 0;
 		int totalMatch = 1;
-		int argumentCount = arguments.size();
 
 		// infix modifier implementation
 		if (receiver != null)
@@ -547,6 +524,13 @@ public abstract class AbstractMethod extends Member implements IMethod, ILabelCo
 			}
 		}
 
+		// Only matching the name
+		if (arguments == null)
+		{
+			return totalMatch;
+		}
+
+		final int argumentCount = arguments.size();
 		final int parametersLeft = this.parameterCount - parameterStartIndex;
 		if (argumentCount > parametersLeft && !this.isVariadic())
 		{

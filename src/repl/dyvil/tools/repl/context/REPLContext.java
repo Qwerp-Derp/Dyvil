@@ -69,7 +69,7 @@ public class REPLContext extends DyvilHeader
 	protected final List<IClassCompilable> compilableList = new ArrayList<>();
 	protected final List<IClassCompilable> innerClassList = new ArrayList<>();
 
-	private IClass memberClass;
+	private REPLMemberClass memberClass;
 
 	public REPLContext(DyvilREPL repl)
 	{
@@ -105,6 +105,7 @@ public class REPLContext extends DyvilHeader
 	{
 		this.currentCode = code;
 		this.className = REPL$CLASSES + "REPL$Result" + this.classIndex++;
+		this.memberClass = new REPLMemberClass(this, Name.getQualified(this.className));
 		this.cleanup();
 	}
 
@@ -230,12 +231,11 @@ public class REPLContext extends DyvilHeader
 		field.compute(this.repl, this.compilableList);
 	}
 
-	private REPLMemberClass getREPLClass(IClassMember member)
+	private void initMember(IClassMember member)
 	{
-		REPLMemberClass iclass = new REPLMemberClass(Name.getQualified(this.className), member, this);
-		member.setEnclosingClass(iclass);
+		this.memberClass.setMember(member);
+		member.setEnclosingClass(this.memberClass);
 		member.getModifiers().addIntModifier(Modifiers.STATIC);
-		return iclass;
 	}
 
 	private void compileClass(IClass iclass)
@@ -276,7 +276,7 @@ public class REPLContext extends DyvilHeader
 		                                            modifierList, null);
 		field.setValue(value);
 
-		this.memberClass = this.getREPLClass(field);
+		this.initMember(field);
 
 		IType type = value.getType();
 		IValue typedValue = value.withType(type, type, this.markers, this);
@@ -465,7 +465,8 @@ public class REPLContext extends DyvilHeader
 	@Override
 	public void addDataMember(REPLVariable variable)
 	{
-		this.memberClass = this.getREPLClass(variable);
+		this.initMember(variable);
+
 		final Name variableName = variable.getName();
 
 		this.fields.put(variableName, variable);
@@ -488,9 +489,9 @@ public class REPLContext extends DyvilHeader
 	@Override
 	public void addProperty(IProperty property)
 	{
-		REPLMemberClass iclass = this.getREPLClass(property);
+		this.initMember(property);
 
-		property.setEnclosingClass(iclass);
+		property.setEnclosingClass(this.memberClass);
 		property.resolveTypes(this.markers, this);
 		property.resolve(this.markers, this);
 		property.checkTypes(this.markers, this);
@@ -508,12 +509,12 @@ public class REPLContext extends DyvilHeader
 		}
 		property.cleanup(this, this);
 
-		this.compileClass(iclass);
+		this.compileClass(this.memberClass);
 
 		this.properties.put(property.getName(), property);
 
 		StringBuilder buf = new StringBuilder("Defined Property '");
-		Util.memberSignatureToString(property, buf);
+		Util.memberSignatureToString(property, null, buf);
 		this.compiler.getOutput().println(buf.append('\'').toString());
 	}
 
@@ -522,7 +523,7 @@ public class REPLContext extends DyvilHeader
 	{
 		updateModifiers(method.getModifiers());
 
-		REPLMemberClass iclass = this.getREPLClass(method);
+		this.initMember(method);
 
 		method.resolveTypes(this.markers, this);
 		if (this.hasErrors())
@@ -546,7 +547,7 @@ public class REPLContext extends DyvilHeader
 		}
 		method.cleanup(this, this);
 
-		this.compileClass(iclass);
+		this.compileClass(this.memberClass);
 
 		this.registerMethod(method);
 	}
@@ -586,7 +587,7 @@ public class REPLContext extends DyvilHeader
 		}
 
 		buf.append('\'');
-		Util.methodSignatureToString(method, buf);
+		Util.methodSignatureToString(method, null, buf);
 		this.compiler.getOutput().println(buf.append('\'').toString());
 	}
 
@@ -632,25 +633,28 @@ public class REPLContext extends DyvilHeader
 			IContext.getMethodMatch(list, receiver, name, arguments, method);
 		}
 
-		final Name removeEq = Util.removeEq(name);
-
-		IProperty property = this.properties.get(removeEq);
-		if (property != null)
+		if (name != null)
 		{
-			property.getMethodMatches(list, receiver, name, arguments);
-		}
+			final Name removeEq = Util.removeEq(name);
 
-		final IField field = this.fields.get(removeEq);
-		if (field != null)
-		{
-			property = field.getProperty();
+			IProperty property = this.properties.get(removeEq);
 			if (property != null)
 			{
 				property.getMethodMatches(list, receiver, name, arguments);
 			}
+
+			final IField field = this.fields.get(removeEq);
+			if (field != null)
+			{
+				property = field.getProperty();
+				if (property != null)
+				{
+					property.getMethodMatches(list, receiver, name, arguments);
+				}
+			}
 		}
 
-		if (!list.isEmpty())
+		if (!list.isEmpty() && name != null)
 		{
 			return;
 		}
