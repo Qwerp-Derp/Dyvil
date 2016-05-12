@@ -33,6 +33,12 @@ public class ClassGenericType extends GenericType
 		this.theClass = iclass;
 	}
 
+	public ClassGenericType(IClass theClass, IType... typeArguments)
+	{
+		super(typeArguments);
+		this.theClass = theClass;
+	}
+
 	public ClassGenericType(IClass iclass, IType[] typeArguments, int typeArgumentCount)
 	{
 		super(typeArguments, typeArgumentCount);

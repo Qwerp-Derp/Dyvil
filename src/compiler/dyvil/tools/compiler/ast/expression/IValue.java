@@ -54,12 +54,11 @@ public interface IValue extends IASTNode, ITyped
 	int THIS  = 64;
 	int SUPER = 65;
 
-	int CAST_OPERATOR = 66;
-	int ISOF_OPERATOR = 67;
-	// int CASE_STATEMENT   = 68;
-	int MATCH         = 69;
-	int LAMBDA        = 70;
-	// int PARTIAL_FUNCTION = 71;
+	int CAST_OPERATOR    = 66;
+	int ISOF_OPERATOR    = 67;
+	int MATCH            = 69;
+	int LAMBDA           = 70;
+	int PARTIAL_FUNCTION = 71;
 
 	// Access and Invocation
 	int CLASS_ACCESS  = 96;
