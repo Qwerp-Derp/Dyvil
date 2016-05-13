@@ -7,7 +7,6 @@ import dyvil.tools.compiler.ast.context.IContext;
 import dyvil.tools.compiler.ast.expression.ColonOperator;
 import dyvil.tools.compiler.ast.expression.IValue;
 import dyvil.tools.compiler.ast.parameter.ArgumentList;
-import dyvil.tools.compiler.ast.parameter.SingleArgument;
 import dyvil.tools.compiler.ast.statement.IfStatement;
 import dyvil.tools.compiler.ast.structure.IClassCompilableList;
 import dyvil.tools.compiler.ast.type.IType;
@@ -103,7 +102,22 @@ public class OperatorChain implements IValue
 			return this.operands[0];
 		case 1:
 			return binaryOp(this.operands[0], this.operators[0], this.operands[1]).resolve(markers, context);
-		// TODO Inline Operator resolution for 2 operators?
+		case 2:
+			final IValue lhs = this.operands[0];
+			final OperatorElement element1 = this.operators[0];
+			final IValue center = this.operands[1];
+			final OperatorElement element2 = this.operators[1];
+			final IValue rhs = this.operands[2];
+
+			if (element1.operator.getType() == IOperator.TERNARY && element2.name == element1.operator.getTernaryName())
+			{
+				return ternaryOp(lhs, element1, center, element2, rhs).resolve(markers, context);
+			}
+			if (lowerPrecedence(element2, element1, null, markers))
+			{
+				return binaryOp(binaryOp(lhs, element1, center), element2, rhs).resolve(markers, context);
+			}
+			return binaryOp(lhs, element1, binaryOp(center, element2, rhs)).resolve(markers, context);
 		}
 
 		final Stack<OperatorElement> operatorStack = new LinkedList<>();
@@ -228,9 +242,7 @@ public class OperatorChain implements IValue
 			}
 		}
 
-		final MethodCall methodCall = new MethodCall(operator.position, lhs, name, new SingleArgument(rhs));
-		methodCall.setDotless(true);
-		return methodCall;
+		return new InfixCall(operator.position, lhs, name, rhs);
 	}
 
 	private static IValue ternaryOp(IValue lhs, OperatorElement operator1, IValue center, OperatorElement operator2, IValue rhs)

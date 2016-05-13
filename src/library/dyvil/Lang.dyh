@@ -12,6 +12,7 @@ import	dyvil.tuple._
 import	dyvil.io.Console
 import	dyvil.random.Random
 import	dyvil.util.{ Option, None, Some }
+import  dyvil.util.Configurable
 import	dyvil.util.Version
 
 // Import useful annotation classes
@@ -51,6 +52,8 @@ type	Int		= java.lang.Integer
 type	Long	= java.lang.Long
 type	Float	= java.lang.Float
 type	Double	= java.lang.Double
+
+type	Configure<T> = T.() -> void
 
 // ---------------------------------------- Operator Definitions ----------------------------------------
 
