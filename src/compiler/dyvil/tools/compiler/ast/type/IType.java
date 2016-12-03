@@ -280,9 +280,9 @@ public interface IType extends IASTNode, IMemberContext, ITypeContext
 	}
 
 	int SUBTYPE_BASE               = 0;
-	int SUBTYPE_UNION_INTERSECTION = 1;
-	int SUBTYPE_TYPEVAR            = 2;
-	int SUBTYPE_COVARIANT_TYPEVAR  = 3;
+	int SUBTYPE_TYPEVAR            = 1;
+	int SUBTYPE_COVARIANT_TYPEVAR  = 2;
+	int SUBTYPE_UNION_INTERSECTION = 3;
 	int SUBTYPE_WILDCARD           = 4;
 
 	default int subTypeCheckLevel()
@@ -410,6 +410,16 @@ public interface IType extends IASTNode, IMemberContext, ITypeContext
 
 	// Compilation
 
+	int NAME_DESCRIPTOR            = 1;
+	int NAME_SIGNATURE             = 2;
+	int NAME_SIGNATURE_GENERIC_ARG = 3;
+	int NAME_FULL                  = 4;
+
+	default int getDescriptorKind()
+	{
+		return this.needsSignature() ? NAME_SIGNATURE : NAME_DESCRIPTOR;
+	}
+
 	String getInternalName();
 
 	default String getExtendedName()
@@ -419,7 +429,10 @@ public interface IType extends IASTNode, IMemberContext, ITypeContext
 		return buffer.toString();
 	}
 
-	void appendExtendedName(StringBuilder buffer);
+	default void appendExtendedName(StringBuilder buffer)
+	{
+		this.appendDescriptor(buffer, NAME_DESCRIPTOR);
+	}
 
 	default String getSignature()
 	{
@@ -428,7 +441,19 @@ public interface IType extends IASTNode, IMemberContext, ITypeContext
 		return builder.toString();
 	}
 
-	void appendSignature(StringBuilder buffer, boolean genericArg);
+	default void appendSignature(StringBuilder buffer, boolean genericArg)
+	{
+		this.appendDescriptor(buffer, genericArg ? NAME_SIGNATURE_GENERIC_ARG : NAME_SIGNATURE);
+	}
+
+	default String getDescriptor(int type)
+	{
+		final StringBuilder builder = new StringBuilder();
+		this.appendDescriptor(builder, type);
+		return builder.toString();
+	}
+
+	void appendDescriptor(StringBuilder buffer, int type);
 
 	int getLoadOpcode();
 
@@ -452,6 +477,10 @@ public interface IType extends IASTNode, IMemberContext, ITypeContext
 
 	void writeDefaultValue(MethodWriter writer) throws BytecodeException;
 
+	IConstantValue getDefaultValue();
+
+	// Annotations
+
 	static IType withAnnotation(IType type, IAnnotation annotation, TypePath typePath)
 	{
 		return withAnnotation(type, annotation, typePath, 0, typePath.getLength());
@@ -459,19 +488,19 @@ public interface IType extends IASTNode, IMemberContext, ITypeContext
 
 	static IType withAnnotation(IType type, IAnnotation annotation, TypePath typePath, int step, int steps)
 	{
-		if (typePath == null || step >= steps)
+		if (typePath != null && step < steps)
 		{
-			final IType customType = type.withAnnotation(annotation);
-			if (customType != null)
-			{
-				return customType;
-			}
-
-			return new AnnotatedType(type, annotation);
+			type.addAnnotation(annotation, typePath, step, steps);
+			return type;
 		}
 
-		type.addAnnotation(annotation, typePath, step, steps);
-		return type;
+		final IType customType = type.withAnnotation(annotation);
+		if (customType != null)
+		{
+			return customType;
+		}
+
+		return new AnnotatedType(type, annotation);
 	}
 
 	default IType withAnnotation(IAnnotation annotation)
@@ -483,7 +512,7 @@ public interface IType extends IASTNode, IMemberContext, ITypeContext
 
 	void writeAnnotations(TypeAnnotatableVisitor visitor, int typeRef, String typePath);
 
-	IConstantValue getDefaultValue();
+	// General Compilation
 
 	static void writeType(IType type, DataOutput dos) throws IOException
 	{
@@ -563,10 +592,10 @@ public interface IType extends IASTNode, IMemberContext, ITypeContext
 
 	void read(DataInput in) throws IOException;
 
+	// Misc
+
 	@Override
 	void toString(String prefix, StringBuilder buffer);
-
-	// Misc
 
 	IType clone();
 

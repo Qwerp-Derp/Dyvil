@@ -12,11 +12,11 @@ import dyvil.tools.compiler.ast.expression.LambdaExpr;
 import dyvil.tools.compiler.ast.field.IDataMember;
 import dyvil.tools.compiler.ast.generic.ITypeContext;
 import dyvil.tools.compiler.ast.generic.ITypeParameter;
+import dyvil.tools.compiler.ast.header.IClassCompilableList;
 import dyvil.tools.compiler.ast.header.ICompilableList;
 import dyvil.tools.compiler.ast.method.IMethod;
 import dyvil.tools.compiler.ast.method.MatchList;
 import dyvil.tools.compiler.ast.parameter.IArguments;
-import dyvil.tools.compiler.ast.header.IClassCompilableList;
 import dyvil.tools.compiler.ast.structure.Package;
 import dyvil.tools.compiler.ast.type.IType;
 import dyvil.tools.compiler.ast.type.ITypeList;
@@ -124,7 +124,7 @@ public final class LambdaType implements IObjectType, ITyped, ITypeList
 			return iclass;
 		}
 
-		iclass = Package.dyvilFunction.resolveClass("Function" + typeCount);
+		iclass = Package.dyvilFunction.resolveClass(Names.Function).resolveClass(Name.fromQualified("Of" + typeCount));
 		functionClasses[typeCount] = iclass;
 		return iclass;
 	}
@@ -350,7 +350,8 @@ public final class LambdaType implements IObjectType, ITyped, ITypeList
 		}
 
 		// Create a defensive copy of the parameter types in case the array has not changed
-		final LambdaType lt = new LambdaType(parametersChanged ? parameterTypes : parameterTypes.clone(), this.parameterCount, returnType);
+		final LambdaType lt = new LambdaType(parametersChanged ? parameterTypes : parameterTypes.clone(),
+		                                     this.parameterCount, returnType);
 		lt.extension = this.extension;
 		return lt;
 	}
@@ -521,25 +522,27 @@ public final class LambdaType implements IObjectType, ITyped, ITypeList
 	@Override
 	public String getInternalName()
 	{
-		return "dyvil/function/Function" + this.parameterCount;
+		return "dyvil/function/Function$Of" + this.parameterCount;
 	}
 
 	@Override
-	public void appendExtendedName(StringBuilder buffer)
+	public void appendDescriptor(StringBuilder buffer, int type)
 	{
-		buffer.append("Ldyvil/function/Function").append(this.parameterCount).append(';');
-	}
+		buffer.append("Ldyvil/function/Function$Of").append(this.parameterCount);
 
-	@Override
-	public void appendSignature(StringBuilder buffer, boolean genericArg)
-	{
-		buffer.append("Ldyvil/function/Function").append(this.parameterCount).append('<');
-		for (int i = 0; i < this.parameterCount; i++)
+		if (type != NAME_DESCRIPTOR)
 		{
-			this.parameterTypes[i].appendSignature(buffer, true);
+			final int parType = type != NAME_FULL ? NAME_SIGNATURE_GENERIC_ARG : NAME_FULL;
+
+			buffer.append('<');
+			for (int i = 0; i < this.parameterCount; i++)
+			{
+				this.parameterTypes[i].appendDescriptor(buffer, parType);
+			}
+			this.returnType.appendDescriptor(buffer, parType);
+			buffer.append('>');
 		}
-		this.returnType.appendSignature(buffer, true);
-		buffer.append(">;");
+		buffer.append(';');
 	}
 
 	@Override

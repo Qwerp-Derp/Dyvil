@@ -11,11 +11,11 @@ import dyvil.tools.compiler.ast.expression.IValue;
 import dyvil.tools.compiler.ast.field.IDataMember;
 import dyvil.tools.compiler.ast.generic.ITypeContext;
 import dyvil.tools.compiler.ast.generic.ITypeParameter;
+import dyvil.tools.compiler.ast.header.IClassCompilableList;
 import dyvil.tools.compiler.ast.header.ICompilableList;
 import dyvil.tools.compiler.ast.method.IMethod;
 import dyvil.tools.compiler.ast.method.MatchList;
 import dyvil.tools.compiler.ast.parameter.IArguments;
-import dyvil.tools.compiler.ast.header.IClassCompilableList;
 import dyvil.tools.compiler.ast.structure.Package;
 import dyvil.tools.compiler.ast.type.IType;
 import dyvil.tools.compiler.ast.type.ITypeList;
@@ -39,8 +39,10 @@ import java.io.IOException;
 
 public final class TupleType implements IObjectType, ITypeList
 {
-	public static final IClass[] tupleClasses = new IClass[22];
-	public static final String[] descriptors  = new String[22];
+	public static final int MAX_ARITY = 10;
+
+	public static final IClass[] tupleClasses = new IClass[MAX_ARITY];
+	public static final String[] descriptors  = new String[MAX_ARITY];
 
 	protected IType[] types;
 	protected int     typeCount;
@@ -91,7 +93,7 @@ public final class TupleType implements IObjectType, ITypeList
 			return iclass;
 		}
 
-		iclass = Package.dyvilTuple.resolveClass("Tuple" + count);
+		iclass = Package.dyvilTuple.resolveClass(Names.Tuple).resolveClass(Name.fromQualified("Of" + count));
 		tupleClasses[count] = iclass;
 		return iclass;
 	}
@@ -386,21 +388,23 @@ public final class TupleType implements IObjectType, ITypeList
 	}
 
 	@Override
-	public void appendExtendedName(StringBuilder buffer)
+	public void appendDescriptor(StringBuilder buffer, int type)
 	{
-		buffer.append('L').append(this.getInternalName()).append(';');
-	}
+		buffer.append('L').append(this.getInternalName());
 
-	@Override
-	public void appendSignature(StringBuilder buf, boolean genericArg)
-	{
-		buf.append('L').append(this.getInternalName());
-		buf.append('<');
-		for (int i = 0; i < this.typeCount; i++)
+		if (type != NAME_DESCRIPTOR)
 		{
-			this.types[i].appendSignature(buf, true);
+			final int parType = type == NAME_FULL ? NAME_FULL : NAME_SIGNATURE_GENERIC_ARG;
+
+			buffer.append('<');
+			for (int i = 0; i < this.typeCount; i++)
+			{
+				this.types[i].appendDescriptor(buffer, parType);
+			}
+			buffer.append('>');
 		}
-		buf.append('>').append(';');
+
+		buffer.append(';');
 	}
 
 	@Override
